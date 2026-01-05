@@ -4,19 +4,40 @@
  */
 package petshop.panel;
 
+import java.awt.event.KeyEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.text.NumberFormat;
+import java.util.Locale;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import petshop.util.Koneksi;
 /**
  *
  * @author HP VICTUS
  */
 public class Transkasi extends javax.swing.JPanel {
+    
+    // Model Tabel
+    private DefaultTableModel modelProduk;
+    private DefaultTableModel modelKeranjang;
+    
+    // Variabel kalkulasi
+    long subTotal = 0;
+    long ppn = 0;
+    long grandTotal = 0;
 
+    public Transkasi() {
+        initComponents();
+        initTableModels();
+        loadDataProduk(""); // Load data saat panel dibuka
+    }
+    
     /**
      * Creates new form Transkasi
      */
-    public Transkasi() {
-        initComponents();
-    }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -29,20 +50,23 @@ public class Transkasi extends javax.swing.JPanel {
         jPanel4 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jTable2 = new javax.swing.JTable();
-        jPanel2 = new javax.swing.JPanel();
+        tblKeranjang = new javax.swing.JTable();
+        p = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        lblSubTotal = new javax.swing.JLabel();
+        lblPPN = new javax.swing.JLabel();
+        lblGrandTotal = new javax.swing.JLabel();
+        btnBayar = new javax.swing.JButton();
+        btnBatal = new javax.swing.JButton();
         jPanel5 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        txtCari = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        tblProduk = new javax.swing.JTable();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -51,7 +75,7 @@ public class Transkasi extends javax.swing.JPanel {
         jLabel3.setFont(new java.awt.Font("SansSerif", 1, 24)); // NOI18N
         jLabel3.setText("Detail Transaksi");
 
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+        tblKeranjang.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -62,9 +86,9 @@ public class Transkasi extends javax.swing.JPanel {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
-        jScrollPane2.setViewportView(jTable2);
+        jScrollPane2.setViewportView(tblKeranjang);
 
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        p.setBackground(new java.awt.Color(255, 255, 255));
 
         jLabel4.setFont(new java.awt.Font("SansSerif", 1, 14)); // NOI18N
         jLabel4.setForeground(new java.awt.Color(51, 51, 51));
@@ -78,42 +102,65 @@ public class Transkasi extends javax.swing.JPanel {
         jLabel6.setFont(new java.awt.Font("SansSerif", 1, 18)); // NOI18N
         jLabel6.setText("Grand Total:");
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
+        lblSubTotal.setText("jLabel7");
+
+        lblPPN.setText("jLabel7");
+
+        lblGrandTotal.setText("jLabel7");
+
+        javax.swing.GroupLayout pLayout = new javax.swing.GroupLayout(p);
+        p.setLayout(pLayout);
+        pLayout.setHorizontalGroup(
+            pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4)
                     .addComponent(jLabel5)
                     .addComponent(jLabel6))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(lblSubTotal)
+                        .addComponent(lblPPN))
+                    .addComponent(lblGrandTotal, javax.swing.GroupLayout.Alignment.TRAILING))
+                .addGap(28, 28, 28))
         );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
+        pLayout.setVerticalGroup(
+            pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel4)
+                .addGroup(pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(lblSubTotal))
                 .addGap(18, 18, 18)
-                .addComponent(jLabel5)
+                .addGroup(pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(lblPPN))
                 .addGap(18, 18, 18)
-                .addComponent(jLabel6)
+                .addGroup(pLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(lblGrandTotal))
                 .addContainerGap(16, Short.MAX_VALUE))
         );
 
-        jButton1.setBackground(new java.awt.Color(0, 153, 0));
-        jButton1.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
-        jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setText("BAYAR");
-
-        jButton2.setBackground(new java.awt.Color(255, 0, 0));
-        jButton2.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
-        jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setText("BATAL");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        btnBayar.setBackground(new java.awt.Color(0, 153, 0));
+        btnBayar.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        btnBayar.setForeground(new java.awt.Color(255, 255, 255));
+        btnBayar.setText("BAYAR");
+        btnBayar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                btnBayarActionPerformed(evt);
+            }
+        });
+
+        btnBatal.setBackground(new java.awt.Color(255, 0, 0));
+        btnBatal.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        btnBatal.setForeground(new java.awt.Color(255, 255, 255));
+        btnBatal.setText("BATAL");
+        btnBatal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBatalActionPerformed(evt);
             }
         });
 
@@ -128,12 +175,12 @@ public class Transkasi extends javax.swing.JPanel {
                         .addComponent(jLabel3)
                         .addGap(0, 253, Short.MAX_VALUE))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(p, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnBayar, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnBatal, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(8, 8, 8)))
                 .addContainerGap())
         );
@@ -145,11 +192,11 @@ public class Transkasi extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 277, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(p, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2))
+                    .addComponent(btnBayar)
+                    .addComponent(btnBatal))
                 .addContainerGap(76, Short.MAX_VALUE))
         );
 
@@ -166,11 +213,16 @@ public class Transkasi extends javax.swing.JPanel {
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/search.png"))); // NOI18N
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 10, 40, 47));
 
-        jTextField1.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
-        jTextField1.setText("Cari Produk");
-        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 10, 430, 47));
+        txtCari.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
+        txtCari.setText("Cari Produk");
+        txtCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtCariActionPerformed(evt);
+            }
+        });
+        jPanel1.add(txtCari, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 10, 430, 47));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tblProduk.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null},
                 {null, null},
@@ -181,7 +233,12 @@ public class Transkasi extends javax.swing.JPanel {
                 "Title 1", "Title 2"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        tblProduk.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblProdukMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tblProduk);
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -214,15 +271,200 @@ public class Transkasi extends javax.swing.JPanel {
 
         add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(450, 0, 450, 560));
     }// </editor-fold>//GEN-END:initComponents
+    private void initTableModels() {
+        // 1. Setup Tabel Produk (Kanan) - Sumber Data
+        modelProduk = new DefaultTableModel();
+        modelProduk.addColumn("ID Barang");
+        modelProduk.addColumn("Nama Barang");
+        modelProduk.addColumn("Harga");
+        modelProduk.addColumn("Stok");
+        tblProduk.setModel(modelProduk);
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // 2. Setup Tabel Keranjang (Kiri) - Belanjaan
+        modelKeranjang = new DefaultTableModel();
+        modelKeranjang.addColumn("ID");
+        modelKeranjang.addColumn("Nama Barang");
+        modelKeranjang.addColumn("Harga");
+        modelKeranjang.addColumn("Qty");
+        modelKeranjang.addColumn("Subtotal");
+        tblKeranjang.setModel(modelKeranjang);
+    }
+    
+    private void loadDataProduk(String key) {
+        modelProduk.setRowCount(0);
+        try {
+            Connection c = Koneksi.Go(); // Menggunakan koneksi Anda
+            Statement s = c.createStatement();
+            
+            // Asumsi nama tabel di database adalah 'barang'
+            String sql = "SELECT * FROM barang WHERE nama_barang LIKE '%" + key + "%' OR id_barang LIKE '%" + key + "%'";
+            ResultSet r = s.executeQuery(sql);
+
+            while (r.next()) {
+                modelProduk.addRow(new Object[]{
+                    r.getString("id_barang"),
+                    r.getString("nama_barang"),
+                    r.getString("harga_jual"), // Pastikan nama kolom sesuai DB
+                    r.getString("stok")
+                });
+            }
+            
+            r.close();
+            s.close();
+        } catch (Exception e) {
+            System.err.println("Error Load Data: " + e.getMessage());
+        }
+    }
+    private String formatRupiah(long nominal) {
+        return NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(nominal);
+    }
+    
+    private void hitungTotal() {
+        subTotal = 0;
+        
+        // Loop semua baris di tabel keranjang
+        for (int i = 0; i < tblKeranjang.getRowCount(); i++) {
+            // Kolom ke-4 adalah Subtotal (indeks 4)
+            long val = Long.parseLong(tblKeranjang.getValueAt(i, 4).toString());
+            subTotal += val;
+        }
+
+        // Hitung PPN 12%
+        ppn = (long) (subTotal * 0.12);
+        grandTotal = subTotal + ppn;
+
+        // Tampilkan ke Label GUI
+        lblSubTotal.setText(formatRupiah(subTotal));
+        lblPPN.setText(formatRupiah(ppn));
+        lblGrandTotal.setText(formatRupiah(grandTotal));
+    }
+    
+    private void tambahKeKeranjang() {
+        int row = tblProduk.getSelectedRow();
+        if (row != -1) {
+            String id = tblProduk.getValueAt(row, 0).toString();
+            String nama = tblProduk.getValueAt(row, 1).toString();
+            long harga = Long.parseLong(tblProduk.getValueAt(row, 2).toString());
+            int stok = Integer.parseInt(tblProduk.getValueAt(row, 3).toString());
+
+            // Input jumlah beli
+            String input = JOptionPane.showInputDialog(this, "Masukkan Jumlah Beli untuk " + nama + ":", "1");
+            
+            if (input != null && input.matches("[0-9]+")) {
+                int qty = Integer.parseInt(input);
+                
+                if (qty > stok) {
+                    JOptionPane.showMessageDialog(this, "Stok tidak cukup! Sisa: " + stok);
+                    return;
+                }
+                
+                long totalPerItem = harga * qty;
+
+                // Tambah ke tabel keranjang
+                modelKeranjang.addRow(new Object[]{
+                    id, nama, harga, qty, totalPerItem
+                });
+
+                hitungTotal();
+            }
+        }
+    }
+    
+    private void prosesBayar() {
+        if (tblKeranjang.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "Keranjang kosong!");
+            return;
+        }
+
+        Connection c = Koneksi.Go();
+        try {
+            c.setAutoCommit(false); // Memulai Transaksi Database
+
+            // 1. Simpan ke Tabel TRANSAKSI
+            // Sesuaikan kolom: id_pelanggan & id_pegawai diset default 1 dulu
+            String sqlHead = "INSERT INTO transaksi (tanggal, id_pelanggan, id_pegawai, total_harga, diskon, grand_total, metode_pembayaran) VALUES (NOW(), ?, ?, ?, ?, ?, ?)";
+            PreparedStatement psHead = c.prepareStatement(sqlHead, Statement.RETURN_GENERATED_KEYS);
+            
+            psHead.setInt(1, 1); // ID Pelanggan (Default/Umum)
+            psHead.setInt(2, 1); // ID Pegawai (Default/Admin)
+            psHead.setLong(3, subTotal);
+            psHead.setLong(4, 0); // Diskon 0
+            psHead.setLong(5, grandTotal);
+            psHead.setString(6, "Cash");
+            
+            psHead.executeUpdate();
+
+            // Ambil ID Transaksi yang baru dibuat
+            ResultSet rsID = psHead.getGeneratedKeys();
+            int idTransaksi = 0;
+            if (rsID.next()) {
+                idTransaksi = rsID.getInt(1);
+            }
+
+            // 2. Simpan ke Tabel DETAILTRANSAKSI & Update Stok
+            String sqlDetail = "INSERT INTO detailtransaksi (id_transaksi, id_barang, qty, subtotal) VALUES (?, ?, ?, ?)";
+            String sqlUpdateStok = "UPDATE barang SET stok = stok - ? WHERE id_barang = ?";
+            
+            PreparedStatement psDetail = c.prepareStatement(sqlDetail);
+            PreparedStatement psStok = c.prepareStatement(sqlUpdateStok);
+
+            for (int i = 0; i < tblKeranjang.getRowCount(); i++) {
+                String idBarang = tblKeranjang.getValueAt(i, 0).toString();
+                int qty = Integer.parseInt(tblKeranjang.getValueAt(i, 3).toString());
+                long sub = Long.parseLong(tblKeranjang.getValueAt(i, 4).toString());
+
+                // Batch Insert Detail
+                psDetail.setInt(1, idTransaksi);
+                psDetail.setString(2, idBarang);
+                psDetail.setInt(3, qty);
+                psDetail.setLong(4, sub);
+                psDetail.executeUpdate();
+
+                // Batch Update Stok
+                psStok.setInt(1, qty);
+                psStok.setString(2, idBarang);
+                psStok.executeUpdate();
+            }
+
+            c.commit(); // Simpan permanen jika semua sukses
+            JOptionPane.showMessageDialog(this, "Transaksi Berhasil! \nKembalian: Rp 0 (Pas)");
+            
+            // Reset Form
+            modelKeranjang.setRowCount(0);
+            hitungTotal();
+            loadDataProduk(""); // Refresh stok di tabel kanan
+
+        } catch (Exception e) {
+            try { c.rollback(); } catch (Exception ex) {} // Batalkan jika error
+            JOptionPane.showMessageDialog(this, "Transaksi Gagal: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton2ActionPerformed
+        modelKeranjang.setRowCount(0);
+        hitungTotal();
+    }//GEN-LAST:event_btnBatalActionPerformed
+
+    private void tblProdukMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblProdukMouseClicked
+        // TODO add your handling code here:
+        tambahKeKeranjang();
+    }//GEN-LAST:event_tblProdukMouseClicked
+
+    private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCariActionPerformed
+        // TODO add your handling code here:
+        loadDataProduk(txtCari.getText());
+    }//GEN-LAST:event_txtCariActionPerformed
+
+    private void btnBayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBayarActionPerformed
+        // TODO add your handling code here:
+        prosesBayar();
+    }//GEN-LAST:event_btnBayarActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton btnBatal;
+    private javax.swing.JButton btnBayar;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -230,13 +472,16 @@ public class Transkasi extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTable jTable2;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JLabel lblGrandTotal;
+    private javax.swing.JLabel lblPPN;
+    private javax.swing.JLabel lblSubTotal;
+    private javax.swing.JPanel p;
+    private javax.swing.JTable tblKeranjang;
+    private javax.swing.JTable tblProduk;
+    private javax.swing.JTextField txtCari;
     // End of variables declaration//GEN-END:variables
 }
